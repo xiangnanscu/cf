@@ -1,5 +1,5 @@
 // 认证相关 API - 只接收POST请求的示例
-import { ClassView } from '../lib/classview.js';
+import { ClassView } from '../lib/classview.mjs';
 
 class AuthView extends ClassView {
   // 只处理 POST 请求 - 用户登录

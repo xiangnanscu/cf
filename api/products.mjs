@@ -1,5 +1,5 @@
 // 产品相关 API - 使用 ClassView 演示
-import { ClassView } from '../lib/classview.js';
+import { ClassView } from '../lib/classview.mjs';
 
 class ProductView extends ClassView {
   // 处理 GET 请求 - 获取产品列表

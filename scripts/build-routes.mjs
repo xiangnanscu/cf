@@ -19,7 +19,7 @@ async function isClassViewFile(filePath) {
     // 检查是否是类且继承自ClassView
     if (typeof exportedClass === 'function' && exportedClass.prototype) {
       // 导入ClassView来进行比较
-      const { ClassView } = await import('../lib/classview.js');
+      const { ClassView } = await import('../lib/classview.mjs');
 
       // 检查原型链
       let proto = exportedClass.prototype;
@@ -68,9 +68,9 @@ async function scanApiFiles(dir, basePath = '') {
     if (stat.isDirectory()) {
       // 递归扫描子目录
       routes.push(...await scanApiFiles(fullPath, path.join(basePath, file)));
-    } else if (file.endsWith('.js') || file.endsWith('.mjs')) {
+    } else if (file.endsWith('.mjs') || file.endsWith('.js')) {
       // 生成路由路径
-      const routePath = path.join(basePath, file.replace(/\.(js|mjs)$/, ''));
+      const routePath = path.join(basePath, file.replace(/\.(mjs|js)$/, ''));
       const normalizedPath = '/' + routePath.replace(/\\/g, '/');
       const importPath = './api/' + path.join(basePath, file).replace(/\\/g, '/');
 
@@ -96,7 +96,7 @@ const routes = await scanApiFiles(apiDir);
 const indexContent = `// 自动生成的路由索引文件
 // 通过 scripts/build-routes.mjs 生成
 
-import { ClassView } from './lib/classview.js';
+import { ClassView } from './lib/classview.mjs';
 
 ${routes.map((route, index) => {
   if (route.isClassView) {

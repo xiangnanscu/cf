@@ -1,4 +1,4 @@
-import Router from './lib/router.js';
+import Router from './lib/router.mjs';
 // 导入自动生成的路由
 import { routes } from './routes-index.js';
 

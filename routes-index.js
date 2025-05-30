@@ -1,12 +1,12 @@
 // 自动生成的路由索引文件
 // 通过 scripts/build-routes.mjs 生成
 
-import { ClassView } from './lib/classview.js';
+import { ClassView } from './lib/classview.mjs';
 
-import Route0Module from './api/auth.js';
-import route1 from './api/orders/list.js';
-import Route2Module from './api/products.js';
-import route3 from './api/users.js';
+import Route0Module from './api/auth.mjs';
+import route1 from './api/orders/list.mjs';
+import Route2Module from './api/products.mjs';
+import route3 from './api/users.mjs';
 
 // ClassView处理器包装函数
 function wrapClassView(ViewClass) {
