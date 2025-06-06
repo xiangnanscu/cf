@@ -12,13 +12,7 @@ function dispatchResponse(resp, status = 200) {
     try {
       json = JSON.stringify(resp);
     } catch (err) {
-      return new Response(JSON.stringify({
-        error: 'Error when encoding response',
-        message: err.message
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' }
-      });
+      return Router.internalServerErrorResponse('Error when encoding response: ' + err.message);
     }
 
     return new Response(json, {
@@ -43,13 +37,7 @@ function dispatchResponse(resp, status = 200) {
     });
   } else {
     // 其他类型返回错误
-    return new Response(JSON.stringify({
-      error: 'Invalid response type',
-      type: respType
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json; charset=utf-8' }
-    });
+    return Router.internalServerErrorResponse(`Invalid response type: ${respType}`);
   }
 }
 
@@ -71,14 +59,13 @@ export default {
       return dispatchResponse(result, 200);
 
     } catch (error) {
-      console.error('Worker error:', error);
-      return new Response(JSON.stringify({
-        error: 'Internal Server Error',
-        message: error.message
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      if (error instanceof Router.NotFoundError) {
+        return Router.notFoundResponse(error.message);
+      } else if (error instanceof Router.MethodNotAllowedError) {
+        return Router.methodNotAllowedResponse(request);
+      } else {
+        return Router.internalServerErrorResponse(error.message);
+      }
     }
   }
 };
