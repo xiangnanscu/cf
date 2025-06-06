@@ -1,7 +1,7 @@
 import Router from './lib/router.mjs';
-// 导入自动生成的路由
-import { routes } from './routes-index.js';
+import { routes } from './routes.mjs';
 
+const router = Router.create(routes);
 
 function dispatchResponse(resp, status = 200) {
   const respType = typeof resp;
@@ -53,19 +53,7 @@ function dispatchResponse(resp, status = 200) {
   }
 }
 
-// 创建应用实例
-const router = Router.create(routes);
 
-// 添加一个简单的路由用于测试
-router.insert(['/', () => {
-  return { message: 'Hello from Cloudflare Workers!', timestamp: new Date().toISOString() };
-}]);
-
-router.insert(['/health', () => {
-  return { status: 'ok', service: 'cf-workers' };
-}]);
-
-// Cloudflare Workers fetch事件处理器
 export default {
   async fetch(request, env, ctx) {
     try {
@@ -76,12 +64,10 @@ export default {
       const { handler, params } = router.match(path, method);
       const result = await handler(request, env, ctx);
 
-      // 如果result已经是Response实例，直接返回
       if (result instanceof Response) {
         return result;
       }
 
-      // 根据result类型进行处理，参照app.lua的dispatch_response逻辑
       return dispatchResponse(result, 200);
 
     } catch (error) {
