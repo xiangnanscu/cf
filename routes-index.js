@@ -11,8 +11,11 @@ import route3 from './api/users.mjs';
 // ClassView处理器包装函数
 function wrapClassView(ViewClass) {
   if (ViewClass.prototype instanceof ClassView || ViewClass === ClassView) {
-    const instance = new ViewClass();
-    return instance.dispatch;
+    // 返回一个工厂函数，每次调用时创建新实例，确保并发安全
+    return async (request, env, ctx) => {
+      const instance = new ViewClass();
+      return await instance.dispatch(request, env, ctx);
+    };
   }
   return ViewClass;
 }
