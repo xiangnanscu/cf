@@ -10,7 +10,7 @@ import Components from "unplugin-vue-components/vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import * as dotenv from "dotenv";
 import dotenvExpand from "dotenv-expand";
-import vueDevTools from "vite-plugin-vue-devtools";
+import {PrimeVueResolver} from '@primevue/auto-import-resolver';
 import { cloudflare } from "@cloudflare/vite-plugin";
 
 const { parsed: exposedEnvs } = dotenvExpand.expand({
@@ -56,7 +56,7 @@ const plugins = [
     extensions: ["vue"],
     dts: "./src/unplugin/components.d.ts",
     directoryAsNamespace: true,
-    resolvers: [],
+    resolvers: [PrimeVueResolver()],
   }),
   // https://uvr.esm.is/guide/configuration.html
   // https://uvr.esm.is/introduction.html#from-scratch
@@ -122,8 +122,7 @@ const plugins = [
       return `export default Uint8Array.from(atob('${data}'), (c) => c.charCodeAt(0))`;
     },
   },
-  vueDevTools(),
-  cloudflare(),
+  // cloudflare(),
 ];
 // https://vitejs.dev/config/
 export default defineConfig({
