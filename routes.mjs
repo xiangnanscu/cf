@@ -3,10 +3,10 @@
 
 import { ClassView } from './lib/classview.mjs';
 
-import Route0Module from './api/auth.mjs';
-import route1 from './api/orders/list.mjs';
-import Route2Module from './api/products.mjs';
-import route3 from './api/users.mjs';
+import Route0Module from './worker/auth.mjs';
+import route1 from './worker/orders/list.mjs';
+import Route2Module from './worker/products.mjs';
+import route3 from './worker/users.mjs';
 
 function wrapClassView(ViewClass) {
   if (ViewClass.prototype instanceof ClassView || ViewClass === ClassView) {

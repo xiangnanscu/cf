@@ -5,11 +5,11 @@
   "type": "module",
   "main": "lib/index.js",
   "scripts": {
+    "sync": "cp -r ~/create/template/lib/model/* lib/model",
     "build-routes": "node scripts/build-routes.mjs",
     "prebuild": "pnpm run build-routes",
     "dev": "pnpm run build-routes && wrangler dev",
     "deploy": "pnpm run build-routes && wrangler deploy",
-    "sync": "cp -r ~/model/lib/* lib/model",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

@@ -8,10 +8,10 @@ ClassView 是一个类似 Django class-based view 的功能，用于 Cloudflare 
 
 ### 1. 创建 ClassView 子类
 
-在 `api/` 文件夹中创建一个继承自 `ClassView` 的类：
+在 `worker/` 文件夹中创建一个继承自 `ClassView` 的类：
 
 ```javascript
-// api/products.mjs
+// worker/products.mjs
 import { ClassView } from '../lib/classview.mjs';
 
 class ProductView extends ClassView {
@@ -111,7 +111,7 @@ class ExampleView extends ClassView {
 ### 完整的产品管理 API
 
 ```javascript
-// api/products.mjs
+// worker/products.mjs
 import { ClassView } from '../lib/classview.mjs';
 
 class ProductView extends ClassView {
@@ -215,7 +215,7 @@ export default ProductView;
 ### 只接收 POST 的认证 API
 
 ```javascript
-// api/auth.mjs
+// worker/auth.mjs
 import { ClassView } from '../lib/classview.mjs';
 
 class AuthView extends ClassView {

@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const apiDir = path.join(__dirname, '../api');
+const apiDir = path.join(__dirname, '../worker');
 const outputFile = path.join(__dirname, '../routes.mjs');
 
 // Dynamically check if file exports ClassView subclass
@@ -72,7 +72,7 @@ async function scanApiFiles(dir, basePath = '') {
       // Generate route path
       const routePath = path.join(basePath, file.replace(/\.(mjs|js)$/, ''));
       const normalizedPath = '/' + routePath.replace(/\\/g, '/');
-      const importPath = './api/' + path.join(basePath, file).replace(/\\/g, '/');
+      const importPath = './worker/' + path.join(basePath, file).replace(/\\/g, '/');
 
       // Dynamically check if it's a ClassView file
       const isClassView = await isClassViewFile(fullPath);
