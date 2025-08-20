@@ -6,6 +6,7 @@
   "main": "lib/index.js",
   "scripts": {
     "sync": "cp -r ~/create/template/lib/model/* lib/model",
+    "sync-back": "cp -r lib/model/* ~/create/template/lib/model",
     "build-routes": "node scripts/build-routes.mjs",
     "prebuild": "pnpm run build-routes",
     "dev": "pnpm run build-routes && wrangler dev",
