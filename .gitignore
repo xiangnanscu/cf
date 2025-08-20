@@ -96,3 +96,4 @@ dist
 # Lock files (using pnpm)
 package-lock.json
 yarn.lock
+src/unplugin
