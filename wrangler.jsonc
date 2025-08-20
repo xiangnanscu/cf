@@ -6,13 +6,21 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cf",
   "compatibility_date": "2025-04-08",
-  "main": "server.mjs",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": "./server.mjs",
   /**
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
   "vars": {
     "GITHUB_REPO": "xiangnanscu/cf"
+  },
+  "upload_source_maps": true,
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application"
   },
   "observability": {
     "enabled": true
