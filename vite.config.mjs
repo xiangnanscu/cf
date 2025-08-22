@@ -122,7 +122,7 @@ const plugins = [
       return `export default Uint8Array.from(atob('${data}'), (c) => c.charCodeAt(0))`;
     },
   },
-  // cloudflare(),
+  cloudflare(),
 ];
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -135,15 +135,15 @@ export default defineConfig({
       plugins: [],
     },
   },
-  server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:8787",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""),
-      },
-    },
-  },
+  // server: {
+  //   proxy: {
+  //     "/api": {
+  //       target: "http://localhost:8787",
+  //       changeOrigin: true,
+  //       rewrite: (path) => path.replace(/^\/api/, ""),
+  //     },
+  //   },
+  // },
   assetsInclude: ["**/*.xlsx", "**/*.docx"],
   optimizeDeps: {
     include: ["vue"],

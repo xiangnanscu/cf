@@ -1,5 +1,5 @@
 import Router from './lib/router.mjs';
-import { routes } from './routes.mjs';
+import { routes } from './worker/index.mjs';
 
 const router = Router.create(routes);
 

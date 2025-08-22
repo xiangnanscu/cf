@@ -9,10 +9,11 @@
     "sync-back": "cp -r lib/model/* ~/create/template/lib/model",
     "build-routes": "node scripts/build-routes.mjs",
     "prebuild": "pnpm run build-routes",
+    "predev": "pnpm run build-routes",
+    "dev": "dotenv -- vite dev",
     "build": "dotenv -- vite build",
-    "dev": "pnpm run build-routes && wrangler dev",
-    "dev:vite": "dotenv -- vite dev",
-    "deploy": "pnpm run build-routes && wrangler deploy",
+    "preview": "dotenv -- vite build && wrangler dev",
+    "deploy": "dotenv -- vite build && wrangler deploy",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiDir = path.join(__dirname, '../worker');
-const outputFile = path.join(__dirname, '../routes.mjs');
+const outputFile = path.join(__dirname, '../worker/index.mjs');
 
 // Dynamically check if file exports ClassView subclass
 async function isClassViewFile(filePath) {
@@ -68,11 +68,11 @@ async function scanApiFiles(dir, basePath = '') {
     if (stat.isDirectory()) {
       // Recursively scan subdirectories
       routes.push(...await scanApiFiles(fullPath, path.join(basePath, file)));
-    } else if (file.endsWith('.mjs') || file.endsWith('.js')) {
+    } else if ((file.endsWith('.mjs') || file.endsWith('.js')) && !file.split('.')[0] !== 'index') {
       // Generate route path
       const routePath = path.join(basePath, file.replace(/\.(mjs|js)$/, ''));
       const normalizedPath = '/' + routePath.replace(/\\/g, '/');
-      const importPath = './worker/' + path.join(basePath, file).replace(/\\/g, '/');
+      const importPath = './' + path.join(basePath, file).replace(/\\/g, '/');
 
       // Dynamically check if it's a ClassView file
       const isClassView = await isClassViewFile(fullPath);
