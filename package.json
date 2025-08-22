@@ -50,7 +50,6 @@
     "@vue/eslint-config-prettier": "latest",
     "@vue/eslint-config-typescript": "latest",
     "@vue/tsconfig": "latest",
-    "@xnscu/vite-plugin-alioss": "latest",
     "dotenv-cli": "^6.0.0",
     "ejs": "^3.1.9",
     "eslint": "latest",
