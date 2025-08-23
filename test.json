@@ -1,0 +1,59 @@
+{
+  "success": true,
+  "errors": [],
+  "data": {
+    "originalText": "XX",
+    "finalText": "XX",
+    "results": [
+      {
+        "plugin": "P",
+        "input": "XX",
+        "output": "XX",
+        "changes": [
+          {
+            "type": "error",
+            "description": "JSON解析失败: Unexpected token '`', \"```json\n{\n\"... is not valid JSON",
+            "severity": "high",
+            "position": "系统",
+            "original": "",
+            "revised": ""
+          }
+        ],
+        "metadata": {
+          "originalLength": 1365,
+          "processingStart": "2025-08-23T10:08:11.045Z",
+          "analysis": "AI返回了无效的JSON格式",
+          "summary": "解析错误: Unexpected token '`', \"```json\n{\n\"... is not valid JSON",
+          "modelUsed": "gemini",
+          "promptTokens": 1660,
+          "responseTokens": 1726,
+          "processedBy": "P",
+          "processedAt": "2025-08-23T10:08:36.383Z"
+        }
+      }
+    ],
+    "metadata": {
+      "totalPlugins": 1,
+      "executedPlugins": 1,
+      "executionTime": "2025-08-23T10:08:36.383Z",
+      "context": {
+        "requestId": "meo3jbc5kcg10ic47s",
+        "timestamp": "2025-08-23T10:08:11.045Z",
+        "userConfig": {
+          "defaultModel": "gemini"
+        }
+      },
+      "summary": "[P] 解析错误: Unexpected token '`', \"```json\n{\n\"... is not valid JSON",
+      "originalLength": 1365,
+      "processingStart": "2025-08-23T10:08:11.045Z",
+      "analysis": "AI返回了无效的JSON格式",
+      "modelUsed": "gemini",
+      "promptTokens": 1660,
+      "responseTokens": 1726,
+      "processedBy": "P",
+      "processedAt": "2025-08-23T10:08:36.383Z",
+      "processingEnd": "2025-08-23T10:08:36.383Z",
+      "finalLength": 1365
+    }
+  }
+}

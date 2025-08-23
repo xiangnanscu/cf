@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, inject } from 'vue'
+import { ref, onMounted, inject, computed } from 'vue'
 import { diffChars } from 'diff'
 import { useToast } from 'primevue/usetoast'
 
@@ -16,6 +16,30 @@ const isProcessing = ref(false)
 const diffResult = ref(null)
 const processingResults = ref([])
 const errors = ref([])
+
+// 计算属性：从处理结果中提取错误信息
+const pluginErrors = computed(() => {
+  const errorList = []
+  
+  processingResults.value.forEach(result => {
+    if (result.changes) {
+      result.changes
+        .filter(change => change.type === 'error')
+        .forEach(errorChange => {
+          errorList.push({
+            plugin: result.plugin,
+            description: errorChange.description,
+            severity: errorChange.severity
+          })
+        })
+    }
+  })
+  
+  return errorList
+})
+
+// 计算属性：检查是否有插件错误
+const hasPluginErrors = computed(() => pluginErrors.value.length > 0)
 
 onMounted(async () => {
   console.log('index.vue mounted')
@@ -234,14 +258,25 @@ const clearAll = () => {
               <!-- 处理结果 -->
               <div v-if="revisedText" class="result-content">
                 <!-- 错误提示 -->
-                <div v-if="errors.length > 0" class="errors-section">
+                <div v-if="errors.length > 0 || hasPluginErrors" class="errors-section">
+                  <!-- 系统级错误 -->
                   <Message
                     v-for="(error, index) in errors"
-                    :key="index"
+                    :key="'system-' + index"
                     severity="error"
                     :closable="false"
                   >
                     <strong>{{ error.plugin }}:</strong> {{ error.error }}
+                  </Message>
+                  
+                  <!-- 插件内部错误（如JSON解析错误） -->
+                  <Message
+                    v-for="(errorChange, index) in pluginErrors"
+                    :key="'plugin-' + index"
+                    severity="error"
+                    :closable="false"
+                  >
+                    <strong>{{ errorChange.plugin }}:</strong> {{ errorChange.description }}
                   </Message>
                 </div>
 
