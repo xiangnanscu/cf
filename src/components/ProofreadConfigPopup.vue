@@ -68,10 +68,7 @@ const closeDialog = () => {
     :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
   >
     <template #header>
-      <div class="flex align-items-center gap-2">
-        <i class="pi pi-cog text-primary"></i>
-        <span class="font-semibold text-xl">核稿配置</span>
-      </div>
+
     </template>
 
     <div class="config-content">
@@ -114,7 +111,7 @@ const closeDialog = () => {
       </div>
 
       <!-- 高级配置 -->
-      <div class="advanced-section">
+      <div class="advanced-section" style="display: none;">
         <Button
           :icon="showAdvanced ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
           label="高级配置"
@@ -122,7 +119,7 @@ const closeDialog = () => {
           @click="showAdvanced = !showAdvanced"
           class="advanced-toggle"
         />
-        
+
         <div v-if="showAdvanced" class="advanced-config">
           <Divider />
           <div v-for="pluginType in selectedPlugins" :key="pluginType" class="plugin-config">
@@ -288,11 +285,11 @@ const closeDialog = () => {
   .plugin-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .config-option {
     gap: 0.5rem;
   }
-  
+
   .model-select {
     max-width: 100%;
   }

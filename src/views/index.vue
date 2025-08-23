@@ -20,7 +20,7 @@ const errors = ref([])
 // 计算属性：从处理结果中提取错误信息
 const pluginErrors = computed(() => {
   const errorList = []
-  
+
   processingResults.value.forEach(result => {
     if (result.changes) {
       result.changes
@@ -34,7 +34,7 @@ const pluginErrors = computed(() => {
         })
     }
   })
-  
+
   return errorList
 })
 
@@ -84,14 +84,14 @@ const processText = async () => {
     if (result.success) {
       revisedText.value = result.data.finalText
       processingResults.value = result.data.results || []
-      
+
       // 生成diff视图
       generateDiff()
     } else {
       // 处理失败的情况，仍然显示可能的结果
       revisedText.value = result.data?.finalText || originalText.value
       processingResults.value = result.data?.results || []
-      
+
       // 如果有结果文本且与原文不同，生成diff视图
       if (revisedText.value && revisedText.value !== originalText.value) {
         generateDiff()
@@ -100,7 +100,7 @@ const processText = async () => {
 
     // 统一从 errors 数组获取错误信息
     errors.value = result.errors || []
-    
+
     // 如果没有具体的错误信息但有通用错误，添加到errors数组
     if (errors.value.length === 0 && result.error) {
       errors.value = [{ plugin: 'system', error: result.error }]
@@ -202,8 +202,29 @@ const clearAll = () => {
       <div class="input-section">
         <Card class="input-card">
           <template #title>
+
+          </template>
+          <template #content>
+            <div class="input-area">
+              <Textarea
+                v-model="originalText"
+                placeholder="请输入需要核稿的文本..."
+                rows="15"
+                class="w-full"
+              />
+            </div>
+          </template>
+          <template #footer>
             <div class="custom-card-header flex align-items-center justify-content-between">
               <div class="button-group">
+                                <Button
+                  label="清空"
+                  icon="pi pi-trash"
+                  severity="secondary"
+                  @click="clearAll"
+                  class="clear-btn"
+                  size="small"
+                />
                 <Button
                   label="开始核稿"
                   icon="pi pi-check"
@@ -213,26 +234,8 @@ const clearAll = () => {
                   class="review-btn"
                   size="small"
                 />
-                <Button
-                  label="清空"
-                  icon="pi pi-trash"
-                  severity="secondary"
-                  @click="clearAll"
-                  class="clear-btn"
-                  size="small"
-                />
+
               </div>
-            </div>
-          </template>
-          <template #content>
-            <div class="input-area">
-              <Textarea
-                v-model="originalText"
-                placeholder="请输入需要核稿的文本..."
-                rows="15"
-                class="w-full"
-                autoResize
-              />
             </div>
           </template>
         </Card>
@@ -268,7 +271,7 @@ const clearAll = () => {
                   >
                     <strong>{{ error.plugin }}:</strong> {{ error.error }}
                   </Message>
-                  
+
                   <!-- 插件内部错误（如JSON解析错误） -->
                   <Message
                     v-for="(errorChange, index) in pluginErrors"
