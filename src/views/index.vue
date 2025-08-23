@@ -417,7 +417,6 @@ const clearAll = () => {
   font-weight: 500;
   border-radius: 3px;
   padding: 1px 2px;
-  text-decoration: line-through;
 }
 
 /* 自定义卡片标题 */
