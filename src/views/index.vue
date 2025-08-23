@@ -299,8 +299,10 @@ const clearAll = () => {
 }
 
 .button-group {
+  width:100%;
   display: flex;
   gap: 0.75rem;
+  justify-content: space-between;
 }
 
 .review-btn {
