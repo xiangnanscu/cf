@@ -36,12 +36,12 @@ async function handleListPlugins(request, env) {
         name: "语法检查插件",
         description: "检查文本中的语法错误、用词不当、表达不清等问题",
         version: "1.0.0",
-        supportedModels: ["deepseek", "gemini"],
+        supportedModels: ["gemini", "deepseek"],
         configOptions: {
           modelName: {
             type: "select",
-            options: ["deepseek", "gemini"],
-            default: "deepseek",
+            options: ["gemini", "deepseek"],
+            default: "gemini",
           },
           temperature: {
             type: "number",
@@ -56,12 +56,12 @@ async function handleListPlugins(request, env) {
         name: "人员信息核对插件",
         description: "核对文本中的人员姓名和职务信息是否正确",
         version: "1.0.0",
-        supportedModels: ["deepseek", "gemini"],
+        supportedModels: ["gemini", "deepseek"],
         configOptions: {
           modelName: {
             type: "select",
-            options: ["deepseek", "gemini"],
-            default: "deepseek",
+            options: ["gemini", "deepseek"],
+            default: "gemini",
           },
           personnelApiUrl: {
             type: "string",
@@ -179,8 +179,8 @@ async function handleTestPlugin(request, env) {
 
     // 创建测试插件
     let plugin;
-    const modelName = config.modelName || "deepseek";
-    const apiKey = modelName === "deepseek" ? env.DEEPSEEK_API_KEY : env.GEMINI_API_KEY;
+    const modelName = config.modelName || "gemini";
+    const apiKey = modelName === "gemini" ? env.GEMINI_API_KEY : env.DEEPSEEK_API_KEY;
 
     switch (pluginType) {
       case "grammar":

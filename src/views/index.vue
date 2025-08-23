@@ -13,7 +13,7 @@ const diffResult = ref(null)
 const availablePlugins = ref([])
 const selectedPlugins = ref([])
 const availableModels = ref([])
-const selectedModel = ref('deepseek')
+const selectedModel = ref('')
 const processingResults = ref([])
 const errors = ref([])
 const showAdvanced = ref(false)
@@ -49,6 +49,10 @@ const loadModels = async () => {
     const result = await response.json()
     if (result.success) {
       availableModels.value = result.data
+      // 自动选择第一个模型（Gemini）
+      if (result.data.length > 0 && !selectedModel.value) {
+        selectedModel.value = result.data[0].id
+      }
     }
   } catch (error) {
     console.error('Failed to load models:', error)
@@ -113,7 +117,7 @@ const processText = async () => {
 const computeFineDiff = (original, revised) => {
   // 使用diffChars进行字符级别的差异比较
   const charDiff = diffChars(original, revised)
-  
+
   return {
     type: 'char-diff',
     parts: charDiff.map(part => ({
@@ -142,7 +146,7 @@ const copyRevisedText = async () => {
   if (!revisedText.value) {
     return
   }
-  
+
   try {
     await navigator.clipboard.writeText(revisedText.value)
     toast.add({
@@ -341,13 +345,12 @@ const updatePluginConfig = (pluginType, key, value) => {
       <div class="result-section">
         <Card class="result-card">
           <template #title>
-            <div class="flex align-items-center justify-content-between">
+            <div class="custom-card-header flex align-items-center justify-content-between">
               <div class="flex align-items-center gap-2">
                 <i class="pi pi-eye text-success"></i>
-                核稿结果
+                <h3 class="card-title">核稿结果</h3>
               </div>
               <Button
-                v-if="revisedText"
                 icon="pi pi-copy"
                 label="复制结果"
                 size="small"
@@ -359,6 +362,8 @@ const updatePluginConfig = (pluginType, key, value) => {
             </div>
           </template>
           <template #content>
+            <!-- 自定义标题行 -->
+
             <div class="result-area">
               <!-- 空状态 -->
               <div v-if="!revisedText" class="empty-state">
@@ -412,7 +417,7 @@ const updatePluginConfig = (pluginType, key, value) => {
       </div>
     </div>
   </div>
-  
+
   <!-- Toast通知 -->
   <Toast position="top-right" />
 </template>
@@ -796,10 +801,36 @@ const updatePluginConfig = (pluginType, key, value) => {
   border-color: var(--green-200);
 }
 
+/* 自定义卡片标题 */
+.custom-card-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--surface-border);
+  display: flex;
+  justify-content: space-between;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* 卡片标题样式 */
+.result-card .p-card-title {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
 /* 复制按钮样式 */
 .copy-button {
   font-size: 0.875rem;
   padding: 0.5rem 0.75rem;
+  margin-left: auto;
 }
 
 .copy-button:hover {

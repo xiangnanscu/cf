@@ -42,8 +42,8 @@ export default async function handler(request, env) {
     if (plugins.length === 0) {
       // 默认添加语法检查插件
       const grammarPlugin = new GrammarCheckPlugin({
-        modelName: config.defaultModel || 'deepseek',
-        apiKey: env.DEEPSEEK_API_KEY || env.GEMINI_API_KEY
+        modelName: config.defaultModel || 'gemini',
+        apiKey: env.GEMINI_API_KEY || env.DEEPSEEK_API_KEY
       })
       pipeline.addPlugin(grammarPlugin)
     }
@@ -120,7 +120,7 @@ async function createPlugin(config, env) {
     gemini: env.GEMINI_API_KEY
   }
 
-  const modelName = options.modelName || 'deepseek'
+  const modelName = options.modelName || 'gemini'
   const apiKey = apiKeys[modelName]
 
   if (!apiKey) {
