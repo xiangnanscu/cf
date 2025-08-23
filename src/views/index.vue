@@ -56,15 +56,30 @@ const processText = async () => {
 
     const result = await response.json()
 
+    // 处理响应结果（无论success状态如何，都显示可能的结果和错误）
     if (result.success) {
       revisedText.value = result.data.finalText
       processingResults.value = result.data.results || []
-      errors.value = result.data.errors || []
-
+      
       // 生成diff视图
       generateDiff()
     } else {
-      throw new Error(result.error || '核稿处理失败')
+      // 处理失败的情况，仍然显示可能的结果
+      revisedText.value = result.data?.finalText || originalText.value
+      processingResults.value = result.data?.results || []
+      
+      // 如果有结果文本且与原文不同，生成diff视图
+      if (revisedText.value && revisedText.value !== originalText.value) {
+        generateDiff()
+      }
+    }
+
+    // 统一从 errors 数组获取错误信息
+    errors.value = result.errors || []
+    
+    // 如果没有具体的错误信息但有通用错误，添加到errors数组
+    if (errors.value.length === 0 && result.error) {
+      errors.value = [{ plugin: 'system', error: result.error }]
     }
 
   } catch (error) {
