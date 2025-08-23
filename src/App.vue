@@ -3,8 +3,8 @@
     <!-- 顶部导航栏 -->
     <Menubar class="layout-menubar">
       <template #start>
-        <div class="flex align-items-center gap-2">
-          <i class="pi pi-robot text-xl text-primary"></i>
+        <div class="flex align-items-center gap-2 brand-container">
+          <img src="/logo.svg" alt="AI核稿" class="brand-logo" />
           <span class="font-bold text-xl">AI核稿</span>
         </div>
       </template>
@@ -143,5 +143,17 @@ provide('proofreadConfig', {
   color: var(--primary-color);
   background: var(--primary-50);
   transform: scale(1.1);
+}
+
+.brand-container {
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.brand-logo {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 </style>
