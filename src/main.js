@@ -1,14 +1,16 @@
 import { createApp } from "vue";
 import router from "./router";
 import App from "./App.vue";
+import "primeicons/primeicons.css";
 import { Model } from "~/globals";
 import { BaseField } from "~/lib/model/fields.mjs";
 import { request } from "~/lib/Http";
 import useAuth, { updateSession } from "~/composables/useAuth";
 import { isMPWebview, decodeBase64 } from "~/lib/utils";
 import PrimeVue from "primevue/config";
-import Aura from '@primeuix/themes/aura';
-import ToastService from 'primevue/toastservice';
+import Aura from "@primeuix/themes/aura";
+import ToastService from "primevue/toastservice";
+import Tooltip from "primevue/tooltip";
 
 Model.request = request;
 BaseField.request = request;
@@ -21,6 +23,7 @@ app.use(PrimeVue, {
   },
 });
 app.use(ToastService);
+app.directive("tooltip", Tooltip);
 
 app.mount("#app");
 
