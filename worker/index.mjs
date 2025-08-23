@@ -5,8 +5,10 @@ import { ClassView } from '../lib/classview.mjs';
 
 import Route0Module from './auth.mjs';
 import route1 from './orders/list.mjs';
-import Route2Module from './products.mjs';
-import route3 from './users.mjs';
+import route2 from './plugins.mjs';
+import Route3Module from './products.mjs';
+import route4 from './review.mjs';
+import route5 from './users.mjs';
 
 function wrapClassView(ViewClass) {
   if (ViewClass.prototype instanceof ClassView || ViewClass === ClassView) {
@@ -21,6 +23,8 @@ function wrapClassView(ViewClass) {
 export const routes = [
   ['/auth', wrapClassView(Route0Module.default || Route0Module)],
   ['/orders/list', route1],
-  ['/products', wrapClassView(Route2Module.default || Route2Module)],
-  ['/users', route3]
+  ['/plugins', route2],
+  ['/products', wrapClassView(Route3Module.default || Route3Module)],
+  ['/review', route4],
+  ['/users', route5]
 ];

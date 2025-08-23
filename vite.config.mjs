@@ -10,7 +10,7 @@ import Components from "unplugin-vue-components/vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import * as dotenv from "dotenv";
 import dotenvExpand from "dotenv-expand";
-import {PrimeVueResolver} from '@primevue/auto-import-resolver';
+import { PrimeVueResolver } from "@primevue/auto-import-resolver";
 import { cloudflare } from "@cloudflare/vite-plugin";
 
 const { parsed: exposedEnvs } = dotenvExpand.expand({
@@ -21,7 +21,7 @@ const { parsed: exposedEnvs } = dotenvExpand.expand({
   ignoreProcessEnv: true,
 });
 const envKeys = Object.fromEntries(
-  Object.entries(exposedEnvs).map(([k, v]) => [`process.env.${k}`, JSON.stringify(v)]),
+  Object.entries(exposedEnvs).map(([k, v]) => [`process.env.${k}`, JSON.stringify(v)])
 );
 // console.log({ envKeys });
 const env = process.env;
@@ -137,10 +137,17 @@ export default defineConfig({
   },
   // server: {
   //   proxy: {
-  //     "/api": {
+  //     "/plugins": {
   //       target: "http://localhost:8787",
   //       changeOrigin: true,
-  //       rewrite: (path) => path.replace(/^\/api/, ""),
+  //     },
+  //     "/review": {
+  //       target: "http://localhost:8787",
+  //       changeOrigin: true,
+  //     },
+  //     "/users": {
+  //       target: "http://localhost:8787",
+  //       changeOrigin: true,
   //     },
   //   },
   // },

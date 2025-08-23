@@ -1,18 +1,56 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { diffLines, diffWords, diffWordsWithSpace } from 'diff'
 
 // 响应式数据
 const originalText = ref('')
 const revisedText = ref('')
 const isProcessing = ref(false)
 const diffResult = ref(null)
+const availablePlugins = ref([])
+const selectedPlugins = ref([])
+const availableModels = ref([])
+const selectedModel = ref('deepseek')
+const processingResults = ref([])
+const errors = ref([])
+const showAdvanced = ref(false)
 
-onMounted(() => {
+// 插件配置
+const pluginConfigs = ref({})
+
+onMounted(async () => {
   console.log('index.vue mounted')
-  usePost('/users', {
-    text: '你好'
-  })
+  await loadPlugins()
+  await loadModels()
 })
+
+// 加载可用插件
+const loadPlugins = async () => {
+  try {
+    const response = await fetch('/plugins')
+    const result = await response.json()
+    if (result.success) {
+      availablePlugins.value = result.data
+      // 默认选择语法检查插件
+      selectedPlugins.value = ['grammar']
+    }
+  } catch (error) {
+    console.error('Failed to load plugins:', error)
+  }
+}
+
+// 加载可用模型
+const loadModels = async () => {
+  try {
+    const response = await fetch('/plugins?action=models')
+    const result = await response.json()
+    if (result.success) {
+      availableModels.value = result.data
+    }
+  } catch (error) {
+    console.error('Failed to load models:', error)
+  }
+}
 
 // 核稿方法
 const processText = async () => {
@@ -21,40 +59,137 @@ const processText = async () => {
   }
 
   isProcessing.value = true
+  errors.value = []
+  processingResults.value = []
 
   try {
-    // 这里调用后端API进行核稿
-    // const response = await fetch('/api/review', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ text: originalText.value })
-    // })
-    // const result = await response.json()
-    // revisedText.value = result.revisedText
+    // 构建插件配置
+    const plugins = selectedPlugins.value.map(pluginType => ({
+      type: pluginType,
+      options: {
+        modelName: selectedModel.value,
+        ...pluginConfigs.value[pluginType]
+      }
+    }))
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    revisedText.value = `核稿后的文本：${originalText.value}`
+    // 调用后端API进行核稿
+    const response = await fetch('/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: originalText.value,
+        plugins,
+        config: {
+          defaultModel: selectedModel.value
+        }
+      })
+    })
 
-    // 生成简单的diff视图
-    generateDiff()
+    const result = await response.json()
+
+    if (result.success) {
+      revisedText.value = result.data.finalText
+      processingResults.value = result.data.results || []
+      errors.value = result.data.errors || []
+
+      // 生成diff视图
+      generateDiff()
+    } else {
+      throw new Error(result.error || '核稿处理失败')
+    }
+
   } catch (error) {
     console.error('核稿失败:', error)
+    errors.value = [{ plugin: 'system', error: error.message }]
   } finally {
     isProcessing.value = false
   }
+}
+
+// 实现精细的词级别diff算法
+const computeFineDiff = (original, revised) => {
+  const originalLines = original.split('\n')
+  const revisedLines = revised.split('\n')
+  const lineDiff = diffLines(original, revised)
+
+  const result = []
+  let originalLineIndex = 0
+  let revisedLineIndex = 0
+
+  lineDiff.forEach(part => {
+    const lines = part.value.split('\n')
+    // 移除split产生的最后空行
+    if (lines[lines.length - 1] === '') {
+      lines.pop()
+    }
+
+    if (part.added) {
+      // 新增的行
+      lines.forEach(line => {
+        result.push({
+          type: 'added',
+          content: line,
+          lineNumber: revisedLineIndex + 1,
+          parts: [{ type: 'added', value: line }]
+        })
+        revisedLineIndex++
+      })
+    } else if (part.removed) {
+      // 删除的行
+      lines.forEach(line => {
+        result.push({
+          type: 'removed',
+          content: line,
+          lineNumber: originalLineIndex + 1,
+          parts: [{ type: 'removed', value: line }]
+        })
+        originalLineIndex++
+      })
+    } else {
+      // 未修改的行，但需要检查是否有词级别的修改
+      lines.forEach((line, index) => {
+        const originalLine = originalLines[originalLineIndex] || ''
+        const revisedLine = revisedLines[revisedLineIndex] || ''
+
+        if (originalLine === revisedLine) {
+          // 完全相同的行
+          result.push({
+            type: 'unchanged',
+            content: line,
+            lineNumber: originalLineIndex + 1,
+            parts: [{ type: 'unchanged', value: line }]
+          })
+        } else {
+          // 行有差异，进行词级别diff
+          const wordDiff = diffWordsWithSpace(originalLine, revisedLine)
+          result.push({
+            type: 'modified',
+            content: line,
+            originalContent: originalLine,
+            revisedContent: revisedLine,
+            lineNumber: originalLineIndex + 1,
+            parts: wordDiff
+          })
+        }
+
+        originalLineIndex++
+        revisedLineIndex++
+      })
+    }
+  })
+
+  return result
 }
 
 // 生成diff视图
 const generateDiff = () => {
   if (!originalText.value || !revisedText.value) return
 
-  // 这里可以集成专业的diff库，如jsdiff
-  // 现在用简单的对比显示
   diffResult.value = {
     original: originalText.value,
     revised: revisedText.value,
-    changes: []
+    changes: processingResults.value.flatMap(result => result.changes || []),
+    diff: computeFineDiff(originalText.value, revisedText.value)
   }
 }
 
@@ -63,92 +198,349 @@ const clearAll = () => {
   originalText.value = ''
   revisedText.value = ''
   diffResult.value = null
+  processingResults.value = []
+  errors.value = []
+}
+
+// 切换插件选择
+const togglePlugin = (pluginType) => {
+  const index = selectedPlugins.value.indexOf(pluginType)
+  if (index > -1) {
+    selectedPlugins.value.splice(index, 1)
+  } else {
+    selectedPlugins.value.push(pluginType)
+  }
+}
+
+// 获取插件信息
+const getPluginInfo = (pluginType) => {
+  return availablePlugins.value.find(p => p.type === pluginType)
+}
+
+// 更新插件配置
+const updatePluginConfig = (pluginType, key, value) => {
+  if (!pluginConfigs.value[pluginType]) {
+    pluginConfigs.value[pluginType] = {}
+  }
+  pluginConfigs.value[pluginType][key] = value
 }
 </script>
 
 <template>
   <div class="review-container">
-    <!-- 左侧输入区域 -->
-    <div class="input-section">
-      <Card class="input-card">
+    <!-- 配置面板 -->
+    <div class="config-section">
+      <Card class="config-card">
         <template #title>
           <div class="flex align-items-center gap-2">
-            <i class="pi pi-pencil text-primary"></i>
-            输入原文
+            <i class="pi pi-cog text-primary"></i>
+            核稿配置
+            <Button
+              icon="pi pi-angle-down"
+              text
+              @click="showAdvanced = !showAdvanced"
+              :class="{ 'rotate-180': showAdvanced }"
+            />
           </div>
         </template>
         <template #content>
-          <div class="input-area">
-            <Textarea
-              v-model="originalText"
-              placeholder="请输入需要核稿的文本..."
-              rows="15"
-              class="w-full"
-              autoResize
+          <!-- 模型选择 -->
+          <div class="config-group">
+            <label>AI模型：</label>
+            <Dropdown
+              v-model="selectedModel"
+              :options="availableModels"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="选择AI模型"
+              class="model-select"
             />
-            <div class="button-group">
-              <Button
-                label="开始核稿"
-                icon="pi pi-check"
-                @click="processText"
-                :loading="isProcessing"
-                :disabled="!originalText.trim()"
-                class="review-btn"
-              />
-              <Button
-                label="清空"
-                icon="pi pi-trash"
-                severity="secondary"
-                @click="clearAll"
-                class="clear-btn"
-              />
+          </div>
+
+          <!-- 插件选择 -->
+          <div class="config-group">
+            <label>启用插件：</label>
+            <div class="plugin-list">
+              <div
+                v-for="plugin in availablePlugins"
+                :key="plugin.type"
+                class="plugin-item"
+              >
+                <Checkbox
+                  :inputId="plugin.type"
+                  :value="plugin.type"
+                  v-model="selectedPlugins"
+                />
+                <label :for="plugin.type" class="plugin-label">
+                  {{ plugin.name }}
+                  <small>{{ plugin.description }}</small>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 高级配置 -->
+          <div v-if="showAdvanced" class="advanced-config">
+            <Divider />
+            <div v-for="pluginType in selectedPlugins" :key="pluginType" class="plugin-config">
+              <h4>{{ getPluginInfo(pluginType)?.name }} 配置</h4>
+              <div
+                v-for="(option, key) in getPluginInfo(pluginType)?.configOptions"
+                :key="key"
+                class="config-option"
+              >
+                <label>{{ key }}:</label>
+                <InputText
+                  v-if="option.type === 'string'"
+                  :placeholder="option.description"
+                  @update:modelValue="updatePluginConfig(pluginType, key, $event)"
+                />
+                <InputNumber
+                  v-else-if="option.type === 'number'"
+                  :min="option.min"
+                  :max="option.max"
+                  :placeholder="option.default?.toString()"
+                  @update:modelValue="updatePluginConfig(pluginType, key, $event)"
+                />
+              </div>
             </div>
           </div>
         </template>
       </Card>
     </div>
 
-    <!-- 右侧结果区域 -->
-    <div class="result-section">
-      <Card class="result-card">
-        <template #title>
-          <div class="flex align-items-center gap-2">
-            <i class="pi pi-eye text-success"></i>
-            核稿结果
-          </div>
-        </template>
-        <template #content>
-          <div class="result-area">
-            <div v-if="!revisedText" class="empty-state">
-              <i class="pi pi-file-edit text-6xl text-300"></i>
-              <p class="text-500">点击左侧"开始核稿"按钮开始处理</p>
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+      <!-- 左侧输入区域 -->
+      <div class="input-section">
+        <Card class="input-card">
+          <template #title>
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-pencil text-primary"></i>
+              输入原文
             </div>
+          </template>
+          <template #content>
+            <div class="input-area">
+              <Textarea
+                v-model="originalText"
+                placeholder="请输入需要核稿的文本..."
+                rows="15"
+                class="w-full"
+                autoResize
+              />
+              <div class="button-group">
+                <Button
+                  label="开始核稿"
+                  icon="pi pi-check"
+                  @click="processText"
+                  :loading="isProcessing"
+                  :disabled="!originalText.trim() || selectedPlugins.length === 0"
+                  class="review-btn"
+                />
+                <Button
+                  label="清空"
+                  icon="pi pi-trash"
+                  severity="secondary"
+                  @click="clearAll"
+                  class="clear-btn"
+                />
+              </div>
+            </div>
+          </template>
+        </Card>
+      </div>
 
-            <div v-else class="diff-view">
-              <div class="diff-section">
-                <h4 class="diff-title">原文</h4>
-                <div class="text-content original">{{ originalText }}</div>
+      <!-- 右侧结果区域 -->
+      <div class="result-section">
+        <Card class="result-card">
+          <template #title>
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-eye text-success"></i>
+              核稿结果
+            </div>
+          </template>
+          <template #content>
+            <div class="result-area">
+              <!-- 空状态 -->
+              <div v-if="!revisedText" class="empty-state">
+                <i class="pi pi-file-edit text-6xl text-300"></i>
+                <p class="text-500">选择插件并点击"开始核稿"按钮开始处理</p>
               </div>
 
-              <div class="diff-section">
-                <h4 class="diff-title">核稿后</h4>
-                <div class="text-content revised">{{ revisedText }}</div>
+              <!-- 处理结果 -->
+              <div v-else class="result-content">
+                <!-- 错误提示 -->
+                <div v-if="errors.length > 0" class="errors-section">
+                  <Message
+                    v-for="(error, index) in errors"
+                    :key="index"
+                    severity="error"
+                    :closable="false"
+                  >
+                    <strong>{{ error.plugin }}:</strong> {{ error.error }}
+                  </Message>
+                </div>
+
+                <!-- Git风格的Diff视图 -->
+                <div class="diff-view">
+                  <div class="git-diff">
+                    <div class="diff-header">
+                      <div class="diff-stats">
+                        <span class="additions">+{{ diffResult?.diff?.filter(line => line.type === 'added').length || 0 }}</span>
+                        <span class="deletions">-{{ diffResult?.diff?.filter(line => line.type === 'removed').length || 0 }}</span>
+                      </div>
+                    </div>
+
+                    <div class="diff-content">
+                      <div
+                        v-for="(line, index) in diffResult?.diff || []"
+                        :key="index"
+                        :class="['diff-line', `diff-${line.type}`]"
+                      >
+                        <span class="line-number">{{ line.lineNumber || '' }}</span>
+                        <span class="line-marker">
+                          <template v-if="line.type === 'added'">+</template>
+                          <template v-else-if="line.type === 'removed'">-</template>
+                          <template v-else-if="line.type === 'modified'">~</template>
+                          <template v-else>&nbsp;</template>
+                        </span>
+                        <span class="line-content">
+                          <!-- 词级别差异显示 -->
+                          <template v-if="line.type === 'modified'">
+                            <span
+                              v-for="(part, partIndex) in line.parts"
+                              :key="partIndex"
+                              :class="[
+                                'word-part',
+                                part.added ? 'word-added' : '',
+                                part.removed ? 'word-removed' : ''
+                              ]"
+                            >{{ part.value }}</span>
+                          </template>
+                          <!-- 普通行显示 -->
+                          <template v-else>{{ line.content }}</template>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </template>
-      </Card>
+          </template>
+        </Card>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .review-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  height: calc(100vh - 120px);
+}
+
+/* 配置面板 */
+.config-section {
+  flex-shrink: 0;
+}
+
+.config-card {
+  margin-bottom: 1rem;
+}
+
+.config-group {
+  margin-bottom: 1.5rem;
+}
+
+.config-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.model-select {
+  width: 200px;
+}
+
+.plugin-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.plugin-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  background: var(--surface-50);
+  transition: all 0.2s;
+}
+
+.plugin-item:hover {
+  border-color: var(--primary-color);
+  background: var(--primary-50);
+}
+
+.plugin-label {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.plugin-label small {
+  color: var(--text-color-secondary);
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.advanced-config {
+  margin-top: 1rem;
+}
+
+.plugin-config {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  background: var(--surface-0);
+}
+
+.plugin-config h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-color);
+}
+
+.config-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.config-option label {
+  min-width: 120px;
+  margin-bottom: 0;
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+/* 主要内容区域 */
+.main-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
-  padding: 2rem;
-  height: calc(100vh - 120px);
+  flex: 1;
+  min-height: 0;
 }
 
 .input-section,
@@ -205,7 +597,7 @@ const clearAll = () => {
   margin-bottom: 1rem;
 }
 
-.diff-view {
+.result-content {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -213,8 +605,77 @@ const clearAll = () => {
   overflow-y: auto;
 }
 
-.diff-section {
+/* 错误显示 */
+.errors-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 处理过程展示 */
+.processing-results {
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background: var(--surface-50);
+}
+
+.processing-results h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-color);
+}
+
+.processing-timeline {
+  margin: 0;
+}
+
+.timeline-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: var(--surface-0);
+  border: 2px solid var(--success-color);
+  border-radius: 50%;
+}
+
+.timeline-item h5 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
+}
+
+.changes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.change-item {
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.change-grammar {
+  background: var(--yellow-50);
+  border-left: 3px solid var(--yellow-500);
+}
+
+.change-personnel {
+  background: var(--blue-50);
+  border-left: 3px solid var(--blue-500);
+}
+
+.change-error {
+  background: var(--red-50);
+  border-left: 3px solid var(--red-500);
+}
+
+/* Git风格Diff视图 */
+.diff-view {
   flex: 1;
+  overflow-y: auto;
 }
 
 .diff-title {
@@ -224,6 +685,177 @@ const clearAll = () => {
   font-weight: 600;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--surface-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.git-diff {
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  background: var(--surface-0);
+  overflow: hidden;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.diff-header {
+  background: var(--surface-100);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.diff-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.additions {
+  color: var(--green-600);
+}
+
+.deletions {
+  color: var(--red-600);
+}
+
+.diff-content {
+  /* max-height: 400px; */
+  overflow-y: auto;
+}
+
+.diff-line {
+  display: flex;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.diff-line:hover {
+  background: var(--surface-50);
+}
+
+.line-number {
+  width: 50px;
+  padding: 0.25rem 0.5rem;
+  color: var(--text-color-secondary);
+  text-align: right;
+  background: var(--surface-50);
+  border-right: 1px solid var(--surface-border);
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.line-marker {
+  width: 20px;
+  padding: 0.25rem 0.5rem;
+  text-align: center;
+  font-weight: bold;
+  user-select: none;
+}
+
+.line-content {
+  flex: 1;
+  padding: 0.25rem 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-added {
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.diff-added .line-marker {
+  color: var(--green-600);
+  background: rgba(0, 255, 0, 0.2);
+}
+
+.diff-removed {
+  background: rgba(255, 0, 0, 0.1);
+}
+
+.diff-removed .line-marker {
+  color: var(--red-600);
+  background: rgba(255, 0, 0, 0.2);
+}
+
+.diff-modified {
+  background: rgba(255, 165, 0, 0.1);
+}
+
+.diff-modified .line-marker {
+  color: var(--orange-600);
+  background: rgba(255, 165, 0, 0.2);
+}
+
+.diff-unchanged {
+  background: var(--surface-0);
+}
+
+.diff-unchanged .line-marker {
+  color: var(--text-color-secondary);
+}
+
+/* 词级别差异样式 */
+.word-part {
+  display: inline;
+}
+
+.word-added {
+  background: rgba(0, 255, 0, 0.3);
+  color: var(--green-700);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--green-500);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.word-removed {
+  background: rgba(255, 0, 0, 0.3);
+  color: var(--red-700);
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-color: var(--red-500);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* 传统对比视图 */
+.traditional-diff {
+  margin-top: 1rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+}
+
+.traditional-diff summary {
+  padding: 0.75rem 1rem;
+  background: var(--surface-50);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+}
+
+.traditional-diff summary:hover {
+  background: var(--surface-100);
+}
+
+.traditional-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.diff-section {
+  flex: 1;
+}
+
+.section-title {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .text-content {
@@ -231,7 +863,7 @@ const clearAll = () => {
   border-radius: 0.5rem;
   background: var(--surface-50);
   border: 1px solid var(--surface-border);
-  min-height: 200px;
+  min-height: 150px;
   white-space: pre-wrap;
   word-wrap: break-word;
   line-height: 1.6;
@@ -250,21 +882,30 @@ const clearAll = () => {
 }
 
 /* 响应式设计 */
-@media (max-width: 1024px) {
-  .review-container {
+@media (max-width: 1200px) {
+  .main-content {
     grid-template-columns: 1fr;
     gap: 1rem;
-    padding: 1rem;
   }
 
-  .review-container {
-    height: auto;
+  .plugin-list {
+    flex-direction: column;
   }
 }
 
 @media (max-width: 768px) {
   .review-container {
-    padding: 0.5rem;
+    padding: 1rem;
+  }
+
+  .config-option {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .config-option label {
+    min-width: auto;
   }
 
   .button-group {

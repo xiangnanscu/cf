@@ -5,7 +5,7 @@
       <template #start>
         <div class="flex align-items-center gap-2">
           <i class="pi pi-robot text-xl text-primary"></i>
-          <span class="font-bold text-xl">AI文本核稿助手</span>
+          <span class="font-bold text-xl">AI文本核稿助手1</span>
         </div>
       </template>
       <template #end>
