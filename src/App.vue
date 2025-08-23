@@ -152,8 +152,9 @@ provide('proofreadConfig', {
 }
 
 .brand-logo {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
+  margin-right: 8px;
 }
 </style>
