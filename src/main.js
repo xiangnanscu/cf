@@ -8,6 +8,7 @@ import useAuth, { updateSession } from "~/composables/useAuth";
 import { isMPWebview, decodeBase64 } from "~/lib/utils";
 import PrimeVue from "primevue/config";
 import Aura from '@primeuix/themes/aura';
+import ToastService from 'primevue/toastservice';
 
 Model.request = request;
 BaseField.request = request;
@@ -19,6 +20,7 @@ app.use(PrimeVue, {
     preset: Aura,
   },
 });
+app.use(ToastService);
 
 app.mount("#app");
 

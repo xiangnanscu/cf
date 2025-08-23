@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { diffLines, diffWords, diffWordsWithSpace } from 'diff'
+import { diffChars } from 'diff'
+import { useToast } from 'primevue/usetoast'
+
+const toast = useToast()
 
 // 响应式数据
 const originalText = ref('')
@@ -106,79 +109,20 @@ const processText = async () => {
   }
 }
 
-// 实现精细的词级别diff算法
+// 使用diff库的内置功能生成细粒度差异视图
 const computeFineDiff = (original, revised) => {
-  const originalLines = original.split('\n')
-  const revisedLines = revised.split('\n')
-  const lineDiff = diffLines(original, revised)
-
-  const result = []
-  let originalLineIndex = 0
-  let revisedLineIndex = 0
-
-  lineDiff.forEach(part => {
-    const lines = part.value.split('\n')
-    // 移除split产生的最后空行
-    if (lines[lines.length - 1] === '') {
-      lines.pop()
-    }
-
-    if (part.added) {
-      // 新增的行
-      lines.forEach(line => {
-        result.push({
-          type: 'added',
-          content: line,
-          lineNumber: revisedLineIndex + 1,
-          parts: [{ type: 'added', value: line }]
-        })
-        revisedLineIndex++
-      })
-    } else if (part.removed) {
-      // 删除的行
-      lines.forEach(line => {
-        result.push({
-          type: 'removed',
-          content: line,
-          lineNumber: originalLineIndex + 1,
-          parts: [{ type: 'removed', value: line }]
-        })
-        originalLineIndex++
-      })
-    } else {
-      // 未修改的行，但需要检查是否有词级别的修改
-      lines.forEach((line, index) => {
-        const originalLine = originalLines[originalLineIndex] || ''
-        const revisedLine = revisedLines[revisedLineIndex] || ''
-
-        if (originalLine === revisedLine) {
-          // 完全相同的行
-          result.push({
-            type: 'unchanged',
-            content: line,
-            lineNumber: originalLineIndex + 1,
-            parts: [{ type: 'unchanged', value: line }]
-          })
-        } else {
-          // 行有差异，进行词级别diff
-          const wordDiff = diffWordsWithSpace(originalLine, revisedLine)
-          result.push({
-            type: 'modified',
-            content: line,
-            originalContent: originalLine,
-            revisedContent: revisedLine,
-            lineNumber: originalLineIndex + 1,
-            parts: wordDiff
-          })
-        }
-
-        originalLineIndex++
-        revisedLineIndex++
-      })
-    }
-  })
-
-  return result
+  // 使用diffChars进行字符级别的差异比较
+  const charDiff = diffChars(original, revised)
+  
+  return {
+    type: 'char-diff',
+    parts: charDiff.map(part => ({
+      type: part.added ? 'added' : part.removed ? 'removed' : 'unchanged',
+      value: part.value,
+      added: part.added,
+      removed: part.removed
+    }))
+  }
 }
 
 // 生成diff视图
@@ -190,6 +134,48 @@ const generateDiff = () => {
     revised: revisedText.value,
     changes: processingResults.value.flatMap(result => result.changes || []),
     diff: computeFineDiff(originalText.value, revisedText.value)
+  }
+}
+
+// 复制修改后的文本到剪切板
+const copyRevisedText = async () => {
+  if (!revisedText.value) {
+    return
+  }
+  
+  try {
+    await navigator.clipboard.writeText(revisedText.value)
+    toast.add({
+      severity: 'success',
+      summary: '复制成功',
+      detail: '修改后的文本已复制到剪切板',
+      life: 3000
+    })
+  } catch (error) {
+    console.error('复制失败:', error)
+    // 降级方案：使用传统的复制方法
+    try {
+      const textarea = document.createElement('textarea')
+      textarea.value = revisedText.value
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      toast.add({
+        severity: 'success',
+        summary: '复制成功',
+        detail: '修改后的文本已复制到剪切板',
+        life: 3000
+      })
+    } catch (fallbackError) {
+      console.error('复制失败（降级方案）:', fallbackError)
+      toast.add({
+        severity: 'error',
+        summary: '复制失败',
+        detail: '无法复制到剪切板，请手动复制',
+        life: 5000
+      })
+    }
   }
 }
 
@@ -355,9 +341,21 @@ const updatePluginConfig = (pluginType, key, value) => {
       <div class="result-section">
         <Card class="result-card">
           <template #title>
-            <div class="flex align-items-center gap-2">
-              <i class="pi pi-eye text-success"></i>
-              核稿结果
+            <div class="flex align-items-center justify-content-between">
+              <div class="flex align-items-center gap-2">
+                <i class="pi pi-eye text-success"></i>
+                核稿结果
+              </div>
+              <Button
+                v-if="revisedText"
+                icon="pi pi-copy"
+                label="复制结果"
+                size="small"
+                severity="secondary"
+                @click="copyRevisedText"
+                class="copy-button"
+                :disabled="!revisedText"
+              />
             </div>
           </template>
           <template #content>
@@ -387,40 +385,22 @@ const updatePluginConfig = (pluginType, key, value) => {
                   <div class="git-diff">
                     <div class="diff-header">
                       <div class="diff-stats">
-                        <span class="additions">+{{ diffResult?.diff?.filter(line => line.type === 'added').length || 0 }}</span>
-                        <span class="deletions">-{{ diffResult?.diff?.filter(line => line.type === 'removed').length || 0 }}</span>
+                        <span class="additions">+{{ diffResult?.diff?.parts?.filter(part => part.added).length || 0 }}</span>
+                        <span class="deletions">-{{ diffResult?.diff?.parts?.filter(part => part.removed).length || 0 }}</span>
                       </div>
                     </div>
 
                     <div class="diff-content">
-                      <div
-                        v-for="(line, index) in diffResult?.diff || []"
-                        :key="index"
-                        :class="['diff-line', `diff-${line.type}`]"
-                      >
-                        <span class="line-number">{{ line.lineNumber || '' }}</span>
-                        <span class="line-marker">
-                          <template v-if="line.type === 'added'">+</template>
-                          <template v-else-if="line.type === 'removed'">-</template>
-                          <template v-else-if="line.type === 'modified'">~</template>
-                          <template v-else>&nbsp;</template>
-                        </span>
-                        <span class="line-content">
-                          <!-- 词级别差异显示 -->
-                          <template v-if="line.type === 'modified'">
-                            <span
-                              v-for="(part, partIndex) in line.parts"
-                              :key="partIndex"
-                              :class="[
-                                'word-part',
-                                part.added ? 'word-added' : '',
-                                part.removed ? 'word-removed' : ''
-                              ]"
-                            >{{ part.value }}</span>
-                          </template>
-                          <!-- 普通行显示 -->
-                          <template v-else>{{ line.content }}</template>
-                        </span>
+                      <div class="diff-text">
+                        <span
+                          v-for="(part, index) in diffResult?.diff?.parts || []"
+                          :key="index"
+                          :class="[
+                            'diff-part',
+                            part.added ? 'diff-added' : '',
+                            part.removed ? 'diff-removed' : ''
+                          ]"
+                        >{{ part.value }}</span>
                       </div>
                     </div>
                   </div>
@@ -432,6 +412,9 @@ const updatePluginConfig = (pluginType, key, value) => {
       </div>
     </div>
   </div>
+  
+  <!-- Toast通知 -->
+  <Toast position="top-right" />
 </template>
 
 <style scoped>
@@ -720,105 +703,37 @@ const updatePluginConfig = (pluginType, key, value) => {
 }
 
 .diff-content {
-  /* max-height: 400px; */
   overflow-y: auto;
+  padding: 1rem;
 }
 
-.diff-line {
-  display: flex;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  border-bottom: 1px solid var(--surface-border);
-}
-
-.diff-line:hover {
-  background: var(--surface-50);
-}
-
-.line-number {
-  width: 50px;
-  padding: 0.25rem 0.5rem;
-  color: var(--text-color-secondary);
-  text-align: right;
-  background: var(--surface-50);
-  border-right: 1px solid var(--surface-border);
-  font-size: 0.75rem;
-  user-select: none;
-}
-
-.line-marker {
-  width: 20px;
-  padding: 0.25rem 0.5rem;
-  text-align: center;
-  font-weight: bold;
-  user-select: none;
-}
-
-.line-content {
-  flex: 1;
-  padding: 0.25rem 0.5rem;
+.diff-text {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
   white-space: pre-wrap;
-  word-break: break-all;
+  word-wrap: break-word;
 }
 
-.diff-added {
-  background: rgba(0, 255, 0, 0.1);
-}
-
-.diff-added .line-marker {
-  color: var(--green-600);
-  background: rgba(0, 255, 0, 0.2);
-}
-
-.diff-removed {
-  background: rgba(255, 0, 0, 0.1);
-}
-
-.diff-removed .line-marker {
-  color: var(--red-600);
-  background: rgba(255, 0, 0, 0.2);
-}
-
-.diff-modified {
-  background: rgba(255, 165, 0, 0.1);
-}
-
-.diff-modified .line-marker {
-  color: var(--orange-600);
-  background: rgba(255, 165, 0, 0.2);
-}
-
-.diff-unchanged {
-  background: var(--surface-0);
-}
-
-.diff-unchanged .line-marker {
-  color: var(--text-color-secondary);
-}
-
-/* 词级别差异样式 */
-.word-part {
+.diff-part {
   display: inline;
 }
 
-.word-added {
-  background: rgba(0, 255, 0, 0.3);
-  color: var(--green-700);
-  font-weight: 600;
-  text-decoration: underline;
-  text-decoration-color: var(--green-500);
-  border-radius: 2px;
-  padding: 0 2px;
+.diff-added {
+  background: rgba(0, 190, 0, 0.3);
+  color: var(--green-800);
+  font-weight: 500;
+  border-radius: 3px;
+  padding: 1px 2px;
 }
 
-.word-removed {
-  background: rgba(255, 0, 0, 0.3);
-  color: var(--red-700);
-  font-weight: 600;
+.diff-removed {
+  background: rgba(255, 60, 60, 0.3);
+  color: var(--red-800);
+  font-weight: 500;
+  border-radius: 3px;
+  padding: 1px 2px;
   text-decoration: line-through;
-  text-decoration-color: var(--red-500);
-  border-radius: 2px;
-  padding: 0 2px;
 }
 
 /* 传统对比视图 */
@@ -879,6 +794,17 @@ const updatePluginConfig = (pluginType, key, value) => {
 .text-content.revised {
   background: var(--green-50);
   border-color: var(--green-200);
+}
+
+/* 复制按钮样式 */
+.copy-button {
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.copy-button:hover {
+  background: var(--primary-color);
+  color: white;
 }
 
 /* 响应式设计 */
