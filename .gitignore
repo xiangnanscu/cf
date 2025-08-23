@@ -100,3 +100,4 @@ pnpm-lock.yaml
 
 # Unplugin
 src/unplugin
+example.txt

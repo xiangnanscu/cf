@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted } from 'vue'
+import { ref, provide, onMounted, watch } from 'vue'
 import ProofreadConfigPopup from './components/ProofreadConfigPopup.vue'
 
 // 弹窗控制
@@ -60,17 +60,52 @@ const closePopup = () => {
   showConfigPopup.value = false
 }
 
-// 配置数据
+// localStorage 配置键
+const CONFIG_STORAGE_KEY = 'proofreading_config'
+
+// 从 localStorage 加载保存的配置
+const loadSavedConfig = () => {
+  try {
+    const saved = localStorage.getItem(CONFIG_STORAGE_KEY)
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (error) {
+    console.warn('Failed to load saved config:', error)
+  }
+  return {}
+}
+
+// 保存配置到 localStorage
+const saveConfig = () => {
+  try {
+    const config = {
+      selectedPlugins: selectedPlugins.value,
+      selectedModel: selectedModel.value,
+      pluginConfigs: pluginConfigs.value
+    }
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config))
+  } catch (error) {
+    console.warn('Failed to save config:', error)
+  }
+}
+
+// 初始化配置数据，优先使用保存的配置
+const savedConfig = loadSavedConfig()
 const availablePlugins = ref([])
-const selectedPlugins = ref(['grammar'])
+const selectedPlugins = ref(savedConfig.selectedPlugins || ['grammar'])
 const availableModels = ref([])
-const selectedModel = ref('')
-const pluginConfigs = ref({})
+const selectedModel = ref(savedConfig.selectedModel || '')
+const pluginConfigs = ref(savedConfig.pluginConfigs || {})
 
 // 加载配置数据
 onMounted(async () => {
   await loadPlugins()
   await loadModels()
+  // 设置监听器，当配置改变时自动保存
+  watch([selectedPlugins, selectedModel, pluginConfigs], () => {
+    saveConfig()
+  }, { deep: true })
 })
 
 // 加载可用插件
@@ -80,7 +115,10 @@ const loadPlugins = async () => {
     const result = await response.json()
     if (result.success) {
       availablePlugins.value = result.data
-      selectedPlugins.value = ['grammar']
+      // 如果没有保存的配置，使用默认值
+      if (!savedConfig.selectedPlugins) {
+        selectedPlugins.value = ['grammar']
+      }
     }
   } catch (error) {
     console.error('Failed to load plugins:', error)
@@ -94,7 +132,8 @@ const loadModels = async () => {
     const result = await response.json()
     if (result.success) {
       availableModels.value = result.data
-      if (result.data.length > 0 && !selectedModel.value) {
+      // 如果没有保存的模型选择，使用第一个可用模型
+      if (result.data.length > 0 && !savedConfig.selectedModel && !selectedModel.value) {
         selectedModel.value = result.data[0].id
       }
     }
