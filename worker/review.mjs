@@ -64,14 +64,40 @@ export default async function handler(request, env) {
       }
     })
 
-    // 返回处理结果
+    // 检查处理结果，如果有错误则返回错误状态
+    if (!result.success || result.errors.length > 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        errors: result.errors,
+        data: {
+          originalText: result.originalText,
+          finalText: result.finalText || result.originalText, // 如果处理失败，使用原文本
+          results: result.results,
+          metadata: {
+            ...result.metadata,
+            processingEnd: new Date().toISOString(),
+            finalLength: (result.finalText || result.originalText).length
+          }
+        }
+      }), {
+        status: 422, // 处理失败但请求格式正确
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      })
+    }
+
+    // 返回成功结果
     return new Response(JSON.stringify({
-      success: result.success,
+      success: true,
+      errors: [],
       data: {
         originalText: result.originalText,
         finalText: result.finalText,
         results: result.results,
-        errors: result.errors,
         metadata: {
           ...result.metadata,
           processingEnd: new Date().toISOString(),
