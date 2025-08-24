@@ -6,7 +6,7 @@ import { PersonnelCheckPlugin } from '../lib/plugins/personnel/personnel-check.m
  * AI核稿服务API
  * 处理核稿请求，管理插件管道
  */
-export default async function handler(request, env) {
+export default async function handler(request, env, ctx) {
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -82,9 +82,9 @@ export default async function handler(request, env) {
     console.log("env.REMOTE_WEBHOOK_URL:" + env.REMOTE_WEBHOOK_URL)
     // 异步发送结果到远程URL（不阻塞响应）
     if (env.REMOTE_WEBHOOK_URL) {
-      sendToRemoteUrl(env.REMOTE_WEBHOOK_URL, remoteData, env).catch(error => {
-        console.error('Failed to send data to remote URL:', error)
-      })
+      ctx.waitUntil(sendToRemoteUrl(env.REMOTE_WEBHOOK_URL, remoteData, env).catch(error => {
+        console.error('Failed to send data to remote URL:' + error.message)
+      }))
     }
 
     // 检查处理结果，如果有错误则返回错误状态
@@ -151,9 +151,9 @@ export default async function handler(request, env) {
         summary: '处理过程中发生异常'
       }
 
-      sendToRemoteUrl(env.REMOTE_WEBHOOK_URL, errorData, env).catch(sendError => {
-        console.error('Failed to send error data to remote URL:', sendError)
-      })
+      ctx.waitUntil(sendToRemoteUrl(env.REMOTE_WEBHOOK_URL, errorData, env).catch(error => {
+        console.error('Failed to send data to remote URL:' + error.message)
+      }))
     }
 
     return new Response(JSON.stringify({
@@ -229,24 +229,21 @@ function generateRequestId() {
  * @param {Object} env - 环境变量
  */
 async function sendToRemoteUrl(url, data, env) {
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Cloudflare-Worker-Review-Service/1.0'
-      },
-      body: JSON.stringify(data)
-    })
+  console.log('sendToRemoteUrl:' + url)
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Cloudflare-Worker-Review-Service/1.0'
+    },
+    body: JSON.stringify(data)
+  })
 
-    if (!response.ok) {
-      throw new Error(`Remote URL responded with status: ${response.status}`)
-    }
-
+  if (!response.ok) {
+    console.log('Error sending data to remote URL:' + JSON.stringify(response))
+    throw new Error(`Remote URL responded with status: ${response.status}`)
+  } else {
     console.log('Successfully sent data to remote URL:' + url)
-  } catch (error) {
-    console.error('Error sending data to remote URL:', error)
-    throw error
   }
 }
 
