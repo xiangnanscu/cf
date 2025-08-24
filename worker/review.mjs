@@ -79,7 +79,6 @@ export default async function handler(request, env) {
       processingStart,
       summary: result.metadata.summary || '处理完成'
     }
-    console.log("env.GITHUB_REPO2:" + env.GITHUB_REPO2)
     console.log("env.REMOTE_WEBHOOK_URL:" + env.REMOTE_WEBHOOK_URL)
     // 异步发送结果到远程URL（不阻塞响应）
     if (env.REMOTE_WEBHOOK_URL) {
