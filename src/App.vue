@@ -4,8 +4,8 @@
     <Menubar class="layout-menubar">
       <template #start>
         <div class="flex align-items-center gap-2 brand-container">
-          <img src="/logo.svg" alt="AI核稿" class="brand-logo" />
-          <span class="font-bold text-xl">AI核稿</span>
+          <img src="/logo.svg" alt="核稿大师" class="brand-logo" />
+          <span class="font-bold text-xl">核稿大师</span>
         </div>
       </template>
       <template #end>

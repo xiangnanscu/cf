@@ -3,7 +3,7 @@ import { GrammarCheckPlugin } from '../lib/plugins/grammar/grammar-check.mjs'
 import { PersonnelCheckPlugin } from '../lib/plugins/personnel/personnel-check.mjs'
 
 /**
- * AI核稿服务API
+ * 核稿大师服务API
  * 处理核稿请求，管理插件管道
  */
 export default async function handler(request, env, ctx) {
