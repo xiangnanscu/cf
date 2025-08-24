@@ -636,7 +636,7 @@ const clearAll = () => {
 
 @media (max-width: 768px) {
   .review-container {
-    padding: 1rem;
+    padding: 0rem;
   }
 
   .button-group {

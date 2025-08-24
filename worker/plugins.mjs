@@ -30,60 +30,17 @@ export default async function handler(request, env) {
  */
 async function handleListPlugins(request, env) {
   try {
+    // 使用插件的静态元数据
     const plugins = [
       {
+        ...GrammarCheckPlugin.getPluginMetadata(),
         type: "grammar",
-        name: "语法检查插件",
-        description: "检查文本中的语法错误、用词不当、表达不清等问题",
-        version: "1.0.0",
-        supportedModels: ["gemini", "deepseek"],
-        configOptions: {
-          modelName: {
-            type: "select",
-            options: ["gemini", "deepseek"],
-            default: "gemini",
-          },
-          temperature: {
-            type: "number",
-            min: 0,
-            max: 1,
-            default: 0.3,
-          },
-        },
+        name: "语病检查",
       },
       {
+        ...PersonnelCheckPlugin.getPluginMetadata(),
         type: "personnel",
-        name: "人员信息核对插件",
-        description: "核对文本中的人员姓名和职务信息是否正确",
-        version: "1.0.0",
-        supportedModels: ["gemini", "deepseek"],
-        configOptions: {
-          modelName: {
-            type: "select",
-            options: ["gemini", "deepseek"],
-            default: "gemini",
-          },
-          personnelApiUrl: {
-            type: "string",
-            required: false,
-            description: "人员数据API地址",
-          },
-          useLocalPersonnel: {
-            type: "boolean",
-            default: false,
-            description: "使用本地人员名单",
-          },
-          localPersonnelData: {
-            type: "textarea",
-            description: "本地人员名单（每行一个，格式：姓名 职务）",
-            dependsOn: "useLocalPersonnel",
-          },
-          cacheExpiry: {
-            type: "number",
-            default: 1800000,
-            description: "缓存过期时间（毫秒）",
-          },
-        },
+        name: "人员信息核对",
       },
     ];
 
