@@ -12,6 +12,7 @@
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
   "vars": {
+    "GITHUB_REPO2": "xiangnanscu/cf",
     "GITHUB_REPO": "xiangnanscu/cf"
   },
   "upload_source_maps": true,

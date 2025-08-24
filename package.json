@@ -15,6 +15,10 @@
     "preview": "npm run build && wrangler dev",
     "predeploy": "mkdir -p dist",
     "deploy": "wrangler deploy",
+    "commit": "git add . && git commit -am ",
+    "c": "yarn commit",
+    "push": "yarn commit",
+    "g": "yarn commit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

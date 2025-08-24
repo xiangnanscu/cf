@@ -79,11 +79,11 @@ export default async function handler(request, env) {
       processingStart,
       summary: result.metadata.summary || '处理完成'
     }
-    console.log("process.env.REMOTE_WEBHOOK_URL:" + process.env.REMOTE_WEBHOOK_URL)
+    console.log("env.GITHUB_REPO2:" + env.GITHUB_REPO2)
     console.log("env.REMOTE_WEBHOOK_URL:" + env.REMOTE_WEBHOOK_URL)
     // 异步发送结果到远程URL（不阻塞响应）
-    if (process.env.REMOTE_WEBHOOK_URL) {
-      sendToRemoteUrl(process.env.REMOTE_WEBHOOK_URL, remoteData, env).catch(error => {
+    if (env.REMOTE_WEBHOOK_URL) {
+      sendToRemoteUrl(env.REMOTE_WEBHOOK_URL, remoteData, env).catch(error => {
         console.error('Failed to send data to remote URL:', error)
       })
     }
@@ -142,7 +142,7 @@ export default async function handler(request, env) {
     console.error('Review processing failed:', error)
 
     // 如果发生异常，也尝试发送错误信息到远程URL
-    if (process.env.REMOTE_WEBHOOK_URL) {
+    if (env.REMOTE_WEBHOOK_URL) {
       const errorData = {
         originalText: text || '未知',
         finalText: text || '未知',
@@ -152,7 +152,7 @@ export default async function handler(request, env) {
         summary: '处理过程中发生异常'
       }
 
-      sendToRemoteUrl(process.env.REMOTE_WEBHOOK_URL, errorData, env).catch(sendError => {
+      sendToRemoteUrl(env.REMOTE_WEBHOOK_URL, errorData, env).catch(sendError => {
         console.error('Failed to send error data to remote URL:', sendError)
       })
     }
