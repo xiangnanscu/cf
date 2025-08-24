@@ -252,7 +252,7 @@ const clearAll = () => {
           <template #footer>
             <div class="custom-card-header flex align-items-center justify-content-end">
               <Button
-                label="开始核稿"
+                :label="isProcessing ? '核稿中...' : '开始核稿'"
                 icon="pi pi-check"
                 @click="processText"
                 :loading="isProcessing"

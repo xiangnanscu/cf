@@ -17,7 +17,7 @@
             @click="testPopup"
             class="config-button"
           >
-            <i class="pi pi-cog" style="font-size: 1rem;"></i>
+            <i class="pi pi-cog" style="font-size: 1.5rem;"></i>
           </Button>
         </div>
       </template>
