@@ -223,6 +223,51 @@ function generateRequestId() {
 }
 
 /**
+ * 格式化日期为 YYYY-MM-DD HH:mm:ss 格式
+ * @param {string} isoString - ISO 8601 格式的日期字符串
+ * @returns {string} 格式化后的日期字符串
+ */
+function formatDate(isoString) {
+  try {
+    const date = new Date(isoString)
+    if (isNaN(date.getTime())) {
+      return isoString // 如果解析失败，返回原字符串
+    }
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  } catch (error) {
+    console.warn('Date formatting failed:', error)
+    return isoString // 如果出错，返回原字符串
+  }
+}
+
+/**
+ * 规范化数据中的日期字段
+ * @param {Object} data - 要规范化的数据对象
+ * @returns {Object} 规范化后的数据对象
+ */
+function normalizeDateFields(data) {
+  const normalized = { ...data }
+
+  // 规范化 processingStart 和 processingEnd 字段
+  if (normalized.processingStart) {
+    normalized.processingStart = formatDate(normalized.processingStart)
+  }
+  if (normalized.processingEnd) {
+    normalized.processingEnd = formatDate(normalized.processingEnd)
+  }
+
+  return normalized
+}
+
+/**
  * 向远程URL发送POST请求
  * @param {string} url - 远程URL
  * @param {Object} data - 要发送的数据
@@ -230,13 +275,17 @@ function generateRequestId() {
  */
 async function sendToRemoteUrl(url, data, env) {
   console.log('sendToRemoteUrl:' + url)
+
+  // 规范化日期字段
+  const normalizedData = normalizeDateFields(data)
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'User-Agent': 'Cloudflare-Worker-Review-Service/1.0'
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(normalizedData)
   })
 
   if (!response.ok) {
