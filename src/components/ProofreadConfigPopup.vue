@@ -76,7 +76,7 @@ const closeDialog = () => {
 
     <div class="config-content">
       <!-- 模型选择 -->
-      <div class="config-group">
+      <div class="config-group" style="display: none;">
         <label class="config-label">AI模型：</label>
         <Dropdown
           :modelValue="selectedModel"
@@ -156,13 +156,11 @@ const closeDialog = () => {
         <div v-if="props.pluginConfigs.personnel?.useLocalPersonnel" class="local-personnel-config">
           <div class="personnel-input-section">
             <label class="input-label">人员名单录入：</label>
-            <div class="input-hint">每行一个人员，格式："姓名 职务"</div>
-
             <div class="personnel-layout">
               <!-- 左侧输入区 -->
               <div class="input-area">
                 <Textarea
-                  placeholder="请输入人员名单，每行一个人员&#10;例如：&#10;张三 县委书记&#10;李四 县长&#10;王五 水利局局长"
+                  placeholder="请输入人员名单，每行一位人员，例如：&#10;张三 XX局长&#10;李四 XX主任&#10;王五 XX书记"
                   :modelValue="props.pluginConfigs.personnel?.localPersonnelData || ''"
                   @update:modelValue="updatePluginConfig('personnel', 'localPersonnelData', $event)"
                   class="personnel-textarea"
