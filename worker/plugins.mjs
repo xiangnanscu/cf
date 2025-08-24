@@ -65,8 +65,18 @@ async function handleListPlugins(request, env) {
           },
           personnelApiUrl: {
             type: "string",
-            required: true,
+            required: false,
             description: "人员数据API地址",
+          },
+          useLocalPersonnel: {
+            type: "boolean",
+            default: false,
+            description: "使用本地人员名单",
+          },
+          localPersonnelData: {
+            type: "textarea",
+            description: "本地人员名单（每行一个，格式：姓名 职务）",
+            dependsOn: "useLocalPersonnel",
           },
           cacheExpiry: {
             type: "number",
@@ -197,6 +207,9 @@ async function handleTestPlugin(request, env) {
           modelName,
           apiKey,
           personnelApiUrl: config.personnelApiUrl || env.PERSONNEL_API_URL,
+          useLocalPersonnel: config.useLocalPersonnel || false,
+          localPersonnelData: config.localPersonnelData || "",
+          parsedPersonnelData: config.parsedPersonnelData || null,
         });
         break;
 

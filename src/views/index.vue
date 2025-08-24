@@ -2,6 +2,7 @@
 import { ref, onMounted, inject, computed } from 'vue'
 import { diffChars } from 'diff'
 import { useToast } from 'primevue/usetoast'
+import { parseLocalPersonnel } from '../../lib/utils/personnel-parser.mjs'
 
 const toast = useToast()
 
@@ -57,13 +58,27 @@ const processText = async () => {
 
   try {
     // 构建插件配置
-    const plugins = selectedPlugins.value.map(pluginType => ({
-      type: pluginType,
-      options: {
-        modelName: selectedModel.value,
-        ...pluginConfigs.value[pluginType]
+    const plugins = selectedPlugins.value.map(pluginType => {
+      const config = { ...pluginConfigs.value[pluginType] }
+      
+      // 如果是人员插件且使用本地数据，处理解析后的数据
+      if (pluginType === 'personnel' && config.useLocalPersonnel && config.localPersonnelData) {
+        // 使用公共解析函数
+        const parsedPersonnel = parseLocalPersonnel(config.localPersonnelData)
+        
+        // 替换原始文本数据为解析后的结构化数据
+        config.parsedPersonnelData = parsedPersonnel
+        delete config.localPersonnelData // 不再需要原始文本
       }
-    }))
+      
+      return {
+        type: pluginType,
+        options: {
+          modelName: selectedModel.value,
+          ...config
+        }
+      }
+    })
 
     // 调用后端API进行核稿
     const response = await fetch('/review', {
