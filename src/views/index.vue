@@ -206,36 +206,36 @@ const clearAll = () => {
           </template>
           <template #content>
             <div class="input-area">
-              <Textarea
-                v-model="originalText"
-                placeholder="请输入需要核稿的文本..."
-                rows="15"
-                class="w-full"
-              />
+              <div class="textarea-wrapper">
+                <Textarea
+                  v-model="originalText"
+                  placeholder="请输入需要核稿的文本..."
+                  rows="15"
+                  class="w-full"
+                />
+                <Button
+                  v-if="originalText"
+                  icon="pi pi-times"
+                  class="clear-textarea-btn"
+                  @click="originalText = ''"
+                  text
+                  rounded
+                  size="small"
+                />
+              </div>
             </div>
           </template>
           <template #footer>
-            <div class="custom-card-header flex align-items-center justify-content-between">
-              <div class="button-group">
-                                <Button
-                  label="清空"
-                  icon="pi pi-trash"
-                  severity="secondary"
-                  @click="clearAll"
-                  class="clear-btn"
-                  size="small"
-                />
-                <Button
-                  label="开始核稿"
-                  icon="pi pi-check"
-                  @click="processText"
-                  :loading="isProcessing"
-                  :disabled="isProcessing || !originalText.trim() || selectedPlugins.length === 0"
-                  class="review-btn"
-                  size="small"
-                />
-
-              </div>
+            <div class="custom-card-header flex align-items-center justify-content-end">
+              <Button
+                label="开始核稿"
+                icon="pi pi-check"
+                @click="processText"
+                :loading="isProcessing"
+                :disabled="isProcessing || !originalText.trim() || selectedPlugins.length === 0"
+                class="review-btn"
+                size="small"
+              />
             </div>
           </template>
         </Card>
@@ -349,6 +349,28 @@ const clearAll = () => {
   flex-direction: column;
   gap: 1rem;
   height: 100%;
+}
+
+.textarea-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.clear-textarea-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid var(--surface-border) !important;
+  color: var(--text-color-secondary) !important;
+}
+
+.clear-textarea-btn:hover {
+  background: var(--surface-100) !important;
+  color: var(--text-color) !important;
 }
 
 .button-group {
@@ -476,9 +498,16 @@ const clearAll = () => {
 .custom-card-header {
   border-bottom: 1px solid var(--surface-border);
   display: flex;
-  justify-content: space-between;
   padding: 0;
   margin: 0;
+}
+
+.custom-card-header.justify-content-end {
+  justify-content: flex-end;
+}
+
+.custom-card-header.justify-content-between {
+  justify-content: space-between;
 }
 
 /* 卡片标题样式 */
