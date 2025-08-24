@@ -381,7 +381,7 @@ const clearAll = () => {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  padding: 2rem;
+  padding: 0rem;
   height: calc(100vh - 120px);
 }
 
