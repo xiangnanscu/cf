@@ -40,7 +40,7 @@ async function handleListPlugins(request, env) {
       {
         ...PersonnelCheckPlugin.getPluginMetadata(),
         type: "personnel",
-        name: "人员信息核对",
+        name: "人员核对",
       },
     ];
 
