@@ -79,8 +79,8 @@ export default async function handler(request, env) {
       processingStart,
       summary: result.metadata.summary || '处理完成'
     }
-    console.log("process.env.REMOTE_WEBHOOK_URL", process.env.REMOTE_WEBHOOK_URL)
-    console.log("env.REMOTE_WEBHOOK_URL", env.REMOTE_WEBHOOK_URL)
+    console.log("process.env.REMOTE_WEBHOOK_URL:" + process.env.REMOTE_WEBHOOK_URL)
+    console.log("env.REMOTE_WEBHOOK_URL:" + env.REMOTE_WEBHOOK_URL)
     // 异步发送结果到远程URL（不阻塞响应）
     if (process.env.REMOTE_WEBHOOK_URL) {
       sendToRemoteUrl(process.env.REMOTE_WEBHOOK_URL, remoteData, env).catch(error => {
