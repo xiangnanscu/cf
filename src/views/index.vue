@@ -17,6 +17,8 @@ const isProcessing = ref(false)
 const diffResult = ref(null)
 const processingResults = ref([])
 const errors = ref([])
+const showSummaryDialog = ref(false)
+const summaryContent = ref('')
 
 // 计算属性：从处理结果中提取错误信息
 const pluginErrors = computed(() => {
@@ -60,17 +62,17 @@ const processText = async () => {
     // 构建插件配置
     const plugins = selectedPlugins.value.map(pluginType => {
       const config = { ...pluginConfigs.value[pluginType] }
-      
+
       // 如果是人员插件且使用本地数据，处理解析后的数据
       if (pluginType === 'personnel' && config.useLocalPersonnel && config.localPersonnelData) {
         // 使用公共解析函数
         const parsedPersonnel = parseLocalPersonnel(config.localPersonnelData)
-        
+
         // 替换原始文本数据为解析后的结构化数据
         config.parsedPersonnelData = parsedPersonnel
         delete config.localPersonnelData // 不再需要原始文本
       }
-      
+
       return {
         type: pluginType,
         options: {
@@ -100,12 +102,18 @@ const processText = async () => {
       revisedText.value = result.data.finalText
       processingResults.value = result.data.results || []
 
+      // 保存摘要内容
+      summaryContent.value = result.data?.metadata?.summary || ''
+
       // 生成diff视图
       generateDiff()
     } else {
       // 处理失败的情况，仍然显示可能的结果
       revisedText.value = result.data?.finalText || originalText.value
       processingResults.value = result.data?.results || []
+
+      // 保存摘要内容（即使失败也可能有摘要）
+      summaryContent.value = result.data?.metadata?.summary || ''
 
       // 如果有结果文本且与原文不同，生成diff视图
       if (revisedText.value && revisedText.value !== originalText.value) {
@@ -206,6 +214,7 @@ const clearAll = () => {
   diffResult.value = null
   processingResults.value = []
   errors.value = []
+  summaryContent.value = ''
 }
 </script>
 
@@ -224,7 +233,7 @@ const clearAll = () => {
               <div class="textarea-wrapper">
                 <Textarea
                   v-model="originalText"
-                  placeholder="请输入需要核稿的文本..."
+                  placeholder="请输入需要核查的文本..."
                   rows="15"
                   class="w-full"
                 />
@@ -261,14 +270,26 @@ const clearAll = () => {
         <Card class="result-card">
           <template #title>
             <div class="custom-card-header flex align-items-center justify-content-between">
-              <Button
-                icon="pi pi-copy"
-                label="复制结果"
-                size="small"
-                severity="secondary"
-                @click="copyRevisedText"
-                :disabled="!revisedText"
-              />
+              <div class="button-group">
+                <Button
+                  v-if="revisedText"
+                  icon="pi pi-copy"
+                  label="复制结果"
+                  size="small"
+                  severity="secondary"
+                  @click="copyRevisedText"
+                  :disabled="!revisedText"
+                />
+                <Button
+                  v-if="summaryContent"
+                  icon="pi pi-file-text"
+                  label="核稿摘要"
+                  size="small"
+                  severity="info"
+                  @click="showSummaryDialog = true"
+                  :disabled="!summaryContent"
+                />
+              </div>
             </div>
           </template>
           <template #content>
@@ -326,6 +347,33 @@ const clearAll = () => {
 
   <!-- Toast通知 -->
   <Toast position="top-right" />
+
+  <!-- 核稿摘要弹出框 -->
+  <Dialog
+    v-model:visible="showSummaryDialog"
+    modal
+    header="核稿摘要"
+    :style="{ width: '50vw' }"
+    :maximizable="true"
+    :closable="true"
+  >
+    <div class="summary-content">
+      <div v-if="summaryContent" class="summary-text">
+        {{ summaryContent }}
+      </div>
+      <div v-else class="no-summary">
+        暂无摘要内容
+      </div>
+    </div>
+    <template #footer>
+      <Button
+        label="关闭"
+        icon="pi pi-times"
+        @click="showSummaryDialog = false"
+        class="p-button-text"
+      />
+    </template>
+  </Dialog>
 </template>
 
 <style scoped>
@@ -389,10 +437,40 @@ const clearAll = () => {
 }
 
 .button-group {
-  width:100%;
   display: flex;
   gap: 0.75rem;
-  justify-content: space-between;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* 摘要弹出框样式 */
+.summary-content {
+  padding: 1rem 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.summary-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--text-color);
+  background: var(--surface-50);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.no-summary {
+  text-align: center;
+  color: var(--text-color-secondary);
+  font-style: italic;
+  padding: 2rem;
+  background: var(--surface-100);
+  border-radius: 0.5rem;
+  border: 1px dashed var(--surface-border);
 }
 
 .review-btn {
@@ -563,6 +641,11 @@ const clearAll = () => {
 
   .button-group {
     flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .button-group .p-button {
+    width: 100%;
   }
 }
 </style>
