@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, inject, computed } from 'vue'
+import { ref, onMounted, onUnmounted, inject, computed } from 'vue'
 import { diffChars } from 'diff'
 import { useToast } from 'primevue/usetoast'
 import { parseLocalPersonnel } from '../../lib/utils/personnel-parser.mjs'
@@ -19,6 +19,7 @@ const processingResults = ref([])
 const errors = ref([])
 const showSummaryDialog = ref(false)
 const summaryContent = ref('')
+const isMobile = ref(false)
 
 // 计算属性：从处理结果中提取错误信息
 const pluginErrors = computed(() => {
@@ -46,6 +47,22 @@ const hasPluginErrors = computed(() => pluginErrors.value.length > 0)
 
 onMounted(async () => {
   console.log('index.vue mounted')
+
+  // 检测移动端
+  const checkMobile = () => {
+    isMobile.value = window.innerWidth <= 768
+  }
+
+  // 初始检测
+  checkMobile()
+
+  // 监听窗口大小变化
+  window.addEventListener('resize', checkMobile)
+
+  // 清理事件监听器
+  onUnmounted(() => {
+    window.removeEventListener('resize', checkMobile)
+  })
 })
 
 // 核稿方法
@@ -353,9 +370,10 @@ const clearAll = () => {
     v-model:visible="showSummaryDialog"
     modal
     header="核稿摘要"
-    :style="{ width: '50vw' }"
+    :style="{ width: isMobile ? '95vw' : '50vw' }"
     :maximizable="true"
     :closable="true"
+    class="summary-dialog"
   >
     <div class="summary-content">
       <div v-if="summaryContent" class="summary-text">
@@ -423,8 +441,8 @@ const clearAll = () => {
 
 .clear-textarea-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 2px;
+  right: 2px;
   z-index: 10;
   background: rgba(255, 255, 255, 0.9) !important;
   border: 1px solid var(--surface-border) !important;
@@ -634,18 +652,30 @@ const clearAll = () => {
   }
 }
 
+/* 移动端Dialog样式优化 */
+@media (max-width: 768px) {
+  .summary-dialog .p-dialog {
+    margin: 0.5rem;
+  }
+
+  .summary-dialog .p-dialog-content {
+    padding: 1rem;
+  }
+
+  .summary-content {
+    padding: 0.5rem 0;
+  }
+
+  .summary-text {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 768px) {
   .review-container {
     padding: 0rem;
   }
 
-  .button-group {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .button-group .p-button {
-    width: 100%;
-  }
 }
 </style>
