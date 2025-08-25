@@ -211,22 +211,6 @@ const closeDialog = () => {
         </div>
       </div>
     </div>
-
-    <template #footer>
-      <div class="flex justify-content-end gap-2">
-        <Button
-          label="取消"
-          icon="pi pi-times"
-          severity="secondary"
-          @click="closeDialog"
-        />
-        <Button
-          label="确定"
-          icon="pi pi-check"
-          @click="closeDialog"
-        />
-      </div>
-    </template>
   </Dialog>
 </template>
 
